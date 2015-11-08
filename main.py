@@ -15,16 +15,16 @@ def parsetrainingdata():
     numberclass=np.zeros(10)
     i=0
     j=0
-    label=0
+    label=int(labels[0])
     for line in infile.readlines():
         for word in line.strip("\n"):
                 if word == '+' or word == '#':
                     bayesmatrix[label][i%28][j]+=1
                 j+=1
-        if i%27==0 and i!=0 :
+        if i%28==0 and i!=0 :
             numberclass[label]+=1
-            if(i/27<len(labels)):
-                label=int(labels[i/27])
+            if(i/28<len(labels)):
+                label=int(labels[i/28])
         j=0
         i+=1
     for x in xrange(0,10):
@@ -80,25 +80,26 @@ def classifydigit():
             truecount+=1
         confusion_matrix[assignedlabel][truelabel]+=1
     print(float(truecount)/float(len(testlabels)))
-
-
+    confusesum=sum(confusion_matrix)
+    confusion_matrix/confusesum
+    print(confusion_matrix)
 def getimages(c):
     global bayesmatrix
     img = Image.new( 'RGB', (84,28), "black")
     pixels = img.load()
-    min = 100
-    max = -100
+    xmin = 100
+    xmax = -100
     for i in xrange(28):
         for j in xrange(28):
             x = log10(bayesmatrix[c][i][j])
-            if x < min:
-                min = x
-            if x > max :
-                max = x
+            if x < xmin:
+                xmin = x
+            if x > xmax :
+                xmax = x
     for i in xrange(28):
         for j in xrange(28):
             x = log10(bayesmatrix[c][i][j])
-            pixels[i,j]=(i,j,getColor(x,min,max))
+            pixels[i,j]=(i,j,getColor(x,xmin,xmax))
     return img
 
 
@@ -106,44 +107,49 @@ def oddsRatioMap(c1, c2):
         img = Image.new( 'RGB', (84,28), "black")
         pixels=img.load()
         img_c1 = getimages(c1)
+        pixel1=img_c1.load()
         img_c2 = getimages(c2)
-        odds_ratio=np.array(28,28)
+        pixel2=img_c2.load()
+        odds_ratio=np.zeros((28,28))
 
-        x,min = 100,100
-        max = -100
+        x,xmin = 100,100
+        xmax = -100
         for i in xrange(28):
             for j in xrange(28):
                 x = log10(bayesmatrix[c1][j][i]/bayesmatrix[c2][j][i])
-                if x < min:
-                    min = x
+                if x < xmin:
+                    xmin = x
                 if x > max:
-                    max = x
+                    xmax = x
 
 		for i in xrange(28):
 			for j in xrange(28):
 				odds_ratio[j][i] = bayesmatrix[c1][j][i]/bayesmatrix[c2][j][i]
 				x = log10(odds_ratio[j][i])
-				pixels[i,j]=(i,j,getColor(x,min,max))
-                pixels[i+28,j]=(i+28,j,getColor(x,min,max))
-                pixels[i+56,j]=(i+56,j,getColor(x,min,max))
-
-def getColor(x, min, max):
+				pixels[i,j]=getColor(x,xmin,xmax)
+                # print(pixel1[i,j])
+                pixels[i+28,j]=pixel1[i,j]
+                pixels[i+56,j]=pixel2[i,j]
+        # print(pixels)
+        # print(img)
+        img.save("/Users/newuser/Downloads/digitdata/oddratioimage.png")
+def getColor(x, xmin, xmax):
     r = 0
     g = 0
     b = 0
 
     y = x
-    m = (240)/(min-max)
-    a = (-240*max)/(min-max)
+    m = (240)/(xmin-xmax)
+    a = (-240*xmax)/(xmin-xmax)
 
     y = y*(m) + a
 
     h = y
     s = 100
     v = 100
-    h = math.max(0, math.min(360, h))
-    s = math.max(0, math.min(100, s))
-    v = math.max(0, math.min(100, v))
+    h = max(0, min(360, h))
+    s = max(0, min(100, s))
+    v = max(0, min(100, v))
 
     s /= 100
     v /= 100
@@ -327,10 +333,10 @@ if __name__ == "__main__":
     classifydigit()
 
     #
-    # oddsRatioMap(8,3)
-    # oddsRatioMap(9,7)
-    # oddsRatioMap(5,3)
-    # oddsRatioMap(9,4)
+    oddsRatioMap(4,9)
+    oddsRatioMap(5,3)
+    oddsRatioMap(7,9)
+    oddsRatioMap(8,3)
 
 # # def classify(self, testData):
 # #
