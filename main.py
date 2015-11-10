@@ -4,7 +4,7 @@ import numpy as np
 import math
 from math import log10
 from PIL import Image
-
+from sklearn.metrics import confusion_matrix
 
 def parsetrainingdata():
     infile = open("/Users/newuser/Downloads/digitdata/trainingimages.txt", 'r')
@@ -294,6 +294,7 @@ def classifyspam():
         spamword = np.log(spamfreq)
         normalword = np.log(normalfreq)
     correct = np.sum(np.asarray(assignedlabel) == np.asarray(label))
+    print(confusion_matrix(label, assignedlabel))
     print(float(correct) / len(assignedlabel))
 
 # def eightnewsdataset():

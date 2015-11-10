@@ -8,6 +8,7 @@ def builddictionary():
         "/Users/newuser/Downloads/spam_detection/train_email.txt", 'r')
     infile = open(
         "/Users/newuser/Downloads/sentiment/rt-train.txt", 'r')
+    global bayesmatrix
     global worddict
     for line in infile.readlines():
         for word in line.strip("\n").split(' ')[1:]:
@@ -15,7 +16,7 @@ def builddictionary():
             worddict.append(newword)
     worddict = np.unique(np.asarray(worddict))
     print(len(worddict))
-
+    bayesmatrix=np.ones((8,len(worddict)))
 
 def buildconditional():
     global worddict
@@ -30,10 +31,6 @@ def buildconditional():
 
     for line in infile.readlines():
         label = line.strip("\n").split(' ')[0]
-        # if int(label) == 1:
-        #     pclass[0] += 1
-        # else:
-        #     pclass[1] += 1
         pclass[int(label)]+=1
 
 
@@ -74,8 +71,8 @@ def classifyspam():
                 if curpossibility > maxpossibility:
                     maxpossibility = curpossibility
                     assignedlabel = possiblelabel
-                if truelabel == assignedlabel:
-                    truecount += 1
+            if truelabel == assignedlabel:
+                truecount += 1
 
     print(float(truecount) / len(alllines))
 
@@ -85,7 +82,7 @@ if __name__ == "__main__":
     spam = {}
     normal = {}
     pclass = np.zeros((8))
-    bayesmatrix=np.ones((8,len(worddict)))
+    bayesmatrix=[]
     builddictionary()
     buildconditional()
     classifyspam()
