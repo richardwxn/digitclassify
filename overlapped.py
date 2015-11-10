@@ -70,6 +70,8 @@ class BayesClassifier(object):
     def predict(self, X):
         labels = []
         for i in xrange(X.shape[0]):
+            # newlabel=numpy.argmax([numpy.sum(numpy.log(self.bayesmatrix[:, j, X[i, :]==j]) for j in xrange(16)], axis=1)
+
             label = numpy.argmax(numpy.sum(numpy.log(self.bayesmatrix[:, 0, X[i, :]==0]), axis=1) +
                                 numpy.sum(numpy.log(self.bayesmatrix[:, 1, X[i, :]==1]), axis=1) +
                                 numpy.sum(numpy.log(self.bayesmatrix[:, 2, X[i, :]==2]), axis=1) +
