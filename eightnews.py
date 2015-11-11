@@ -2,7 +2,7 @@ import numpy as np
 import math
 from math import log10
 from PIL import Image
-
+import heapq
 def builddictionary():
     infile = open(
         "/Users/newuser/Downloads/spam_detection/train_email.txt", 'r')
@@ -73,7 +73,10 @@ def classifyspam():
                     assignedlabel = possiblelabel
             if truelabel == assignedlabel:
                 truecount += 1
-
+    k_keys_sorted_by_values=np.zeros((8,20))
+    for potential in xrange(9):
+        k_keys_sorted_by_values[potential][:]=heapq.nlargest(20, bayesmatrix[potential][:], key=spam.get)
+    print('top 20 words for news '+str(k_keys_sorted_by_values))
     print(float(truecount) / len(alllines))
 
 if __name__ == "__main__":

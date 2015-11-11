@@ -5,7 +5,7 @@ import math
 from math import log10
 from PIL import Image
 from sklearn.metrics import confusion_matrix
-
+import heapq
 def parsetrainingdata():
     infile = open("/Users/newuser/Downloads/digitdata/trainingimages.txt", 'r')
     inlabel = open(
@@ -96,8 +96,8 @@ def getimages(c):
     global bayesmatrix
     img = Image.new('RGB', (84, 28), "black")
     pixels = img.load()
-    xmin = 100
-    xmax = -100
+    xmin = 1000
+    xmax = -1000
     for i in xrange(28):
         for j in xrange(28):
             x = log10(bayesmatrix[c][i][j])
@@ -108,7 +108,7 @@ def getimages(c):
     for i in xrange(28):
         for j in xrange(28):
             x = log10(bayesmatrix[c][i][j])
-            pixels[i, j] = (i, j, getColor(x, xmin, xmax))
+            pixels[i, j] =  getColor(x, xmin, xmax)
     return img
 
 
@@ -121,27 +121,26 @@ def oddsRatioMap(c1, c2):
     pixel2 = img_c2.load()
     odds_ratio = np.zeros((28, 28))
 
-    x, xmin = 100, 100
-    xmax = -100
+    x, xmin = 100, 1000
+    xmax = -1000
     for i in xrange(28):
         for j in xrange(28):
-            x = log10(bayesmatrix[c1][j][i] / bayesmatrix[c2][j][i])
+            x = log10(bayesmatrix[c1][i][j] / bayesmatrix[c2][i][j])
             if x < xmin:
                 xmin = x
-            if x > max:
+            if x > xmax:
                 xmax = x
 
-            for i in xrange(28):
-                for j in xrange(28):
-                    odds_ratio[j][i] = bayesmatrix[c1][
-                        j][i] / bayesmatrix[c2][j][i]
-                    x = log10(odds_ratio[j][i])
-                    pixels[i, j] = getColor(x, xmin, xmax)
-            # print(pixel1[i,j])
+    for i in xrange(28):
+        for j in xrange(28):
+            odds_ratio[i][j] = bayesmatrix[c1][
+                        i][j] / bayesmatrix[c2][i][j]
+            x = log10(odds_ratio[i][j])
+            pixels[i, j] = getColor(x, xmin, xmax)
             pixels[i + 28, j] = pixel1[i, j]
             pixels[i + 56, j] = pixel2[i, j]
-    # print(pixels)
-    # print(img)
+            # print(pixel1[i,j])
+
     img.save("/Users/newuser/Downloads/digitdata/oddratioimage.png")
 
 
@@ -206,17 +205,17 @@ def getColor(x, xmin, xmax):
             r = v
             g = p
             b = q
-        r = round(255 * r)
-        g = round(255 * g)
-        b = round(255 * b)
-    return (int(r) << 16) | (int(g) << 8) | int(b)
+        r = int(round(255 * r))
+        g = int(round(255 * g))
+        b = int(round(255 * b))
+    return (r,g,b)
+    # return (int(r) << 16) | (int(g) << 8) | int(b)
 
 
 def builddictionary():
     infile = open(
         "/Users/newuser/Downloads/spam_detection/train_email.txt", 'r')
-    infile = open(
-        "/Users/newuser/Downloads/sentiment/rt-train.txt", 'r')
+    # infile = open("/Users/newuser/Downloads/sentiment/rt-train.txt", 'r')
     global worddict
     for line in infile.readlines():
         for word in line.strip("\n").split(' ')[1:]:
@@ -233,8 +232,46 @@ def buildconditional():
     global pclass
     infile = open(
         "/Users/newuser/Downloads/spam_detection/train_email.txt", 'r')
-    infile = open(
-        "/Users/newuser/Downloads/sentiment/rt-train.txt", 'r')
+    # infile = open( "/Users/newuser/Downloads/sentiment/rt-train.txt", 'r')
+    initial=infile.tell()
+
+    # Multinominal
+    # for line in infile.readlines():
+    #     label = line.strip("\n").split(' ')[0]
+    #     if int(label) == 1:
+    #         pclass[0] += 1
+    #     else:
+    #         pclass[1] += 1
+    #     for word in line.strip("\n").split(' ')[1:]:
+    #         newword, count = word.split(':')
+    #         if int(label) == 1:
+    #             if newword in spam:
+    #                 spam[newword] += int(count)
+    #
+    #             else:
+    #                 spam[newword] = 1.0
+    #         else:
+    #             if newword in normal:
+    #                 normal[newword] += int(count)
+    #             else:
+    #                 normal[newword] = 1.0
+    # for word in worddict:
+    #     if word not in spam:
+    #         spam[word] = 1.0
+    #     if word not in normal:
+    #         normal[word] = 1.0
+    # spamsize = np.sum(np.asarray(list(spam.itervalues())))
+    # normalsize = np.sum(np.asarray(list(normal.itervalues())))
+    #
+    # for word in spam:
+    #     spam[word] = spam[word] / spamsize
+    # for word in normal:
+    #     normal[word] = normal[word] / normalsize
+
+    # Bernouli Naive Bayes
+    for word in worddict:
+        spam[word]=1.0
+        normal[word]=1.0
     for line in infile.readlines():
         label = line.strip("\n").split(' ')[0]
         if int(label) == 1:
@@ -245,32 +282,30 @@ def buildconditional():
             newword, count = word.split(':')
             if int(label) == 1:
                 if newword in spam:
-                    spam[newword] += int(count)
-                else:
-                    spam[newword] = 1.0
+                    spam[newword] += 1.0
             else:
                 if newword in normal:
-                    normal[newword] += int(count)
-                else:
-                    normal[newword] = 1.0
-    for word in worddict:
-        if word not in spam:
-            spam[word] = 1.0
-        if word not in normal:
-            normal[word] = 1.0
-    spamsize = np.sum(np.asarray(list(spam.itervalues())))
-    normalsize = np.sum(np.asarray(list(normal.itervalues())))
+                    normal[newword] += 1.0
+    # for word in worddict:
+    #     if word not in spam:
+    #         spam[word] = 1.0
+    #     if word not in normal:
+    #         normal[word] = 1.0
+    infile.seek(initial)
+    length=len(infile.readlines())
     for word in spam:
-        spam[word] = spam[word] / spamsize
+        spam[word] = spam[word] / (pclass[0]+2)
     for word in normal:
-        normal[word] = normal[word] / normalsize
-
-
+        normal[word] = normal[word] / (pclass[1]+2)
+    # for key, value in spam.iteritems():
+    k_keys_sorted_by_values = heapq.nlargest(20, spam, key=spam.get)
+    k_keys_sorted_by_values2 = heapq.nlargest(20, normal, key=normal.get)
+    print('top 20 words for spam '+str(k_keys_sorted_by_values))
+    print('top 20 words for normal '+str(k_keys_sorted_by_values2))
 def classifyspam():
     testfile = open(
         "/Users/newuser/Downloads/spam_detection/test_email.txt", 'r')
-    testfile = open(
-        "/Users/newuser/Downloads/sentiment/rt-test.txt", 'r')
+    # testfile = open( "/Users/newuser/Downloads/sentiment/rt-test.txt", 'r')
     global pclass
     global worddict, spam, normal
     spamfreq = float(pclass[0]) / float(pclass[0] + pclass[1])
@@ -278,27 +313,33 @@ def classifyspam():
     spamword, normalword = np.log(spamfreq), np.log(normalfreq)
     assignedlabel = []
     label = []
+
     for line in testfile.readlines():
+        appearword=[]
         label.append(int(line.strip("\n").split(' ')[0]))
         for word in line.strip("\n").split(' ')[1:]:
             newword, count = word.split(':')
+            appearword.append(newword)
             if newword not in worddict:
                 continue
             spamword += np.log(spam[newword])
             normalword += np.log(normal[newword])
+
+        # This part need to change for two different datasets
+        for word in worddict:
+            if word not in appearword:
+                spamword+=np.log(1-spam[word])
+                normalword+=np.log(1-normal[word])
         if spamword >= normalword:
             assignedlabel.append(1)
 
         else:
-            assignedlabel.append(-1)
+            assignedlabel.append(0)
         spamword = np.log(spamfreq)
         normalword = np.log(normalfreq)
     correct = np.sum(np.asarray(assignedlabel) == np.asarray(label))
     print(confusion_matrix(label, assignedlabel))
     print(float(correct) / len(assignedlabel))
-
-# def eightnewsdataset():
-
 
 
 if __name__ == "__main__":
@@ -311,49 +352,13 @@ if __name__ == "__main__":
     buildconditional()
     classifyspam()
 
+
+
     # bayesmatrix=[]
     # parsetrainingdata()
     # classifydigit()
-    #
-    # #
     # oddsRatioMap(4,9)
     # oddsRatioMap(5,3)
     # oddsRatioMap(7,9)
     # oddsRatioMap(8,3)
 
-# def classify(self, testData):
-# #
-# #
-# """
-# Classify the data based on the posterior distribution over labels.
-# #
-# You shouldn't modify this method.
-# """
-# guesses = []
-# self.posteriors = [] # Log posteriors are stored for later data analysis (autograder).
-# for datum in testData:
-# posterior = self.calculateLogJointProbabilities(datum)
-# guesses.append(posterior.argMax())
-# self.posteriors.append(posterior)
-#
-#   def calculateLogJointProbabilities(self, datum):
-# """
-# Returns the log-joint distribution over legal labels and the datum.
-# Each log-probability should be stored in the log-joint counter, e.g.
-# logJoint[3] = <Estimate of log( P(Label = 3, datum) )>
-#     #
-# To get the list of all possible features or labels, use self.features and
-# self.legalLabels.
-#     #
-#
-#   def findHighOddsFeatures(self, label1, label2):
-#     """
-#     Returns the 100 best features for the odds ratio:
-#             P(feature=1 | label1)/P(feature=1 | label2)
-#
-#     Note: you may find 'self.features' a useful way to loop through all possible features
-#     """
-#     featuresOdds = []
-#
-#
-#     return featuresOdds
