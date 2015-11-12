@@ -236,42 +236,6 @@ def buildconditional():
     initial=infile.tell()
 
     # Multinominal
-    # for line in infile.readlines():
-    #     label = line.strip("\n").split(' ')[0]
-    #     if int(label) == 1:
-    #         pclass[0] += 1
-    #     else:
-    #         pclass[1] += 1
-    #     for word in line.strip("\n").split(' ')[1:]:
-    #         newword, count = word.split(':')
-    #         if int(label) == 1:
-    #             if newword in spam:
-    #                 spam[newword] += int(count)
-    #
-    #             else:
-    #                 spam[newword] = 1.0
-    #         else:
-    #             if newword in normal:
-    #                 normal[newword] += int(count)
-    #             else:
-    #                 normal[newword] = 1.0
-    # for word in worddict:
-    #     if word not in spam:
-    #         spam[word] = 1.0
-    #     if word not in normal:
-    #         normal[word] = 1.0
-    # spamsize = np.sum(np.asarray(list(spam.itervalues())))
-    # normalsize = np.sum(np.asarray(list(normal.itervalues())))
-    #
-    # for word in spam:
-    #     spam[word] = spam[word] / spamsize
-    # for word in normal:
-    #     normal[word] = normal[word] / normalsize
-
-    # Bernouli Naive Bayes
-    for word in worddict:
-        spam[word]=1.0
-        normal[word]=1.0
     for line in infile.readlines():
         label = line.strip("\n").split(' ')[0]
         if int(label) == 1:
@@ -282,22 +246,56 @@ def buildconditional():
             newword, count = word.split(':')
             if int(label) == 1:
                 if newword in spam:
-                    spam[newword] += 1.0
+                    spam[newword] += int(count)
+
+                else:
+                    spam[newword] = 1.0
             else:
                 if newword in normal:
-                    normal[newword] += 1.0
-    # for word in worddict:
-    #     if word not in spam:
-    #         spam[word] = 1.0
-    #     if word not in normal:
-    #         normal[word] = 1.0
-    infile.seek(initial)
-    length=len(infile.readlines())
+                    normal[newword] += int(count)
+                else:
+                    normal[newword] = 1.0
+    for word in worddict:
+        if word not in spam:
+            spam[word] = 1.0
+        if word not in normal:
+            normal[word] = 1.0
+    spamsize = np.sum(np.asarray(list(spam.itervalues())))
+    normalsize = np.sum(np.asarray(list(normal.itervalues())))
+    spamunique=len(np.unique(np.asarray(list(spam.iterkeys()))))
+    normalunique=len(np.unique(np.asarray(list(normal.iterkeys()))))
     for word in spam:
-        spam[word] = spam[word] / (pclass[0]+2)
+        spam[word] = spam[word] / (spamsize+spamunique)
     for word in normal:
-        normal[word] = normal[word] / (pclass[1]+2)
+        normal[word] = normal[word] / (normalsize+normalunique)
+
+    # Bernouli Naive Bayes
+    # for word in worddict:
+    #     spam[word]=1.0
+    #     normal[word]=1.0
+    # for line in infile.readlines():
+    #     label = line.strip("\n").split(' ')[0]
+    #     if int(label) == 1:
+    #         pclass[0] += 1
+    #     else:
+    #         pclass[1] += 1
+    #     for word in line.strip("\n").split(' ')[1:]:
+    #         newword, count = word.split(':')
+    #         if int(label) == 1:
+    #             if newword in spam:
+    #                 spam[newword] += 1.0
+    #         else:
+    #             if newword in normal:
+    #                 normal[newword] += 1.0
+    # infile.seek(initial)
+    # length=len(infile.readlines())
+    # for word in spam:
+    #     spam[word] = spam[word] / (pclass[0]+2)
+    # for word in normal:
+    #     normal[word] = normal[word] / (pclass[1]+2)
     # for key, value in spam.iteritems():
+
+    # key top 20 words for each class
     k_keys_sorted_by_values = heapq.nlargest(20, spam, key=spam.get)
     k_keys_sorted_by_values2 = heapq.nlargest(20, normal, key=normal.get)
     print('top 20 words for spam '+str(k_keys_sorted_by_values))
@@ -326,10 +324,11 @@ def classifyspam():
             normalword += np.log(normal[newword])
 
         # This part need to change for two different datasets
-        for word in worddict:
-            if word not in appearword:
-                spamword+=np.log(1-spam[word])
-                normalword+=np.log(1-normal[word])
+        # This part only for bernouli, you need to include those words not in the document
+        # for word in worddict:
+        #     if word not in appearword:
+        #         spamword+=np.log(1-spam[word])
+        #         normalword+=np.log(1-normal[word])
         if spamword >= normalword:
             assignedlabel.append(1)
 

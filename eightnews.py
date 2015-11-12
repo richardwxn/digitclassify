@@ -25,26 +25,41 @@ def buildconditional():
     global pclass
     global bayesmatrix
     infile = open(
-        "/Users/newuser/Downloads/spam_detection/train_email.txt", 'r')
-    infile = open(
         "/Users/newuser/Downloads/8category/8category.training.txt", 'r')
 
+    #  Multinominal
+
+    # uniquesize=np.zeros((8,1))
+    # for line in infile.readlines():
+    #     label = line.strip("\n").split(' ')[0]
+    #     pclass[int(label)]+=1
+    #
+    #
+    #     for word in line.strip("\n").split(' ')[1:]:
+    #         newword, count = word.split(':')
+    #         bayesmatrix[int(label),np.where(worddict==newword)]+=int(count)
+    #         uniquesize[int(label),0]+=1
+    # for i in xrange(bayesmatrix.shape[0]):
+    #     rowsum=sum(bayesmatrix[i, :])
+    #     for j in xrange(len(worddict)):
+    #         bayesmatrix[i,j]/=(rowsum+uniquesize[i, 0])
+
+    #   Bernouli
+    wordmatrix=
     for line in infile.readlines():
         label = line.strip("\n").split(' ')[0]
         pclass[int(label)]+=1
 
-
         for word in line.strip("\n").split(' ')[1:]:
             newword, count = word.split(':')
-            bayesmatrix[int(label),np.where(worddict==newword)]+=int(count)
+            bayesmatrix[int(label),np.where(worddict==newword)]+=1
     for i in xrange(bayesmatrix.shape[0]):
-        rowsum=sum(bayesmatrix[i,:])
         for j in xrange(len(worddict)):
-            bayesmatrix[i,j]/=rowsum
+            bayesmatrix[i,j]/=(pclass[i]+2)
+
 
 def classifyspam():
-    testfile = open(
-        "/Users/newuser/Downloads/spam_detection/test_email.txt", 'r')
+
     testfile = open(
         "/Users/newuser/Downloads/8category/8category.testing.txt", 'r')
     global pclass
@@ -56,6 +71,26 @@ def classifyspam():
     truecount=0
     label = []
 
+    #Multinominal
+
+    # for line in alllines:
+    #         truelabel=int(line.strip("\n").split(' ')[0])
+    #         maxpossibility=-100000
+    #         assignedlabel=0
+    #         for possiblelabel in xrange(8):
+    #             curpossibility=0.0
+    #             for word in line.strip("\n").split(' ')[1:]:
+    #                 newword, count = word.split(':')
+    #                 if newword not in worddict:
+    #                     continue
+    #                 curpossibility += np.log(bayesmatrix[possiblelabel][np.where(worddict==newword)])
+    #             curpossibility+=frequency[possiblelabel]
+    #             if curpossibility > maxpossibility:
+    #                 maxpossibility = curpossibility
+    #                 assignedlabel = possiblelabel
+    #         if truelabel == assignedlabel:
+    #             truecount += 1
+
     for line in alllines:
             truelabel=int(line.strip("\n").split(' ')[0])
             maxpossibility=-100000
@@ -66,15 +101,19 @@ def classifyspam():
                     newword, count = word.split(':')
                     if newword not in worddict:
                         continue
-                    curpossibility += np.log(bayesmatrix[possiblelabel][np.where(worddict==newword)])
+                    if newword in:
+                        curpossibility += np.log(bayesmatrix[possiblelabel][np.where(worddict==newword)])
+                    else:
+                        curpossibility += np.log(1-bayesmatrix[possiblelabel][np.where(worddict==newword)])
                 curpossibility+=frequency[possiblelabel]
                 if curpossibility > maxpossibility:
                     maxpossibility = curpossibility
                     assignedlabel = possiblelabel
             if truelabel == assignedlabel:
                 truecount += 1
+
     k_keys_sorted_by_values=np.zeros((8,20))
-    for potential in xrange(9):
+    for potential in xrange(8):
         k_keys_sorted_by_values[potential][:]=heapq.nlargest(20, bayesmatrix[potential][:], key=spam.get)
     print('top 20 words for news '+str(k_keys_sorted_by_values))
     print(float(truecount) / len(alllines))
