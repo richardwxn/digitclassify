@@ -45,7 +45,6 @@ def buildconditional():
     #         bayesmatrix[i,j]/=(rowsum+uniquesize[i, 0])
 
     #   Bernouli
-    wordmatrix=
     for line in infile.readlines():
         label = line.strip("\n").split(' ')[0]
         pclass[int(label)]+=1
@@ -95,16 +94,20 @@ def classifyspam():
             truelabel=int(line.strip("\n").split(' ')[0])
             maxpossibility=-100000
             assignedlabel=0
+            appearword=[]
             for possiblelabel in xrange(8):
                 curpossibility=0.0
                 for word in line.strip("\n").split(' ')[1:]:
                     newword, count = word.split(':')
+
                     if newword not in worddict:
                         continue
-                    if newword in:
-                        curpossibility += np.log(bayesmatrix[possiblelabel][np.where(worddict==newword)])
-                    else:
-                        curpossibility += np.log(1-bayesmatrix[possiblelabel][np.where(worddict==newword)])
+                    if possiblelabel == 0:
+                        appearword.append(newword)
+                    curpossibility += np.log(bayesmatrix[possiblelabel][np.where(worddict==newword)])
+                for word in worddict:
+                    if word not in appearword:
+                        curpossibility += np.log(1-bayesmatrix[possiblelabel][np.where(worddict==word)])
                 curpossibility+=frequency[possiblelabel]
                 if curpossibility > maxpossibility:
                     maxpossibility = curpossibility
@@ -114,7 +117,9 @@ def classifyspam():
 
     k_keys_sorted_by_values=np.zeros((8,20))
     for potential in xrange(8):
-        k_keys_sorted_by_values[potential][:]=heapq.nlargest(20, bayesmatrix[potential][:], key=spam.get)
+        # k_keys_sorted_by_values[potential][:]=heapq.nlargest(20, bayesmatrix[potential][:], key=spam.get)
+
+        k_keys_sorted_by_values[potential][:]=np.argpartition(bayesmatrix[potential][:],-20)[-20:]
     print('top 20 words for news '+str(k_keys_sorted_by_values))
     print(float(truecount) / len(alllines))
 
