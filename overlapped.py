@@ -101,13 +101,14 @@ class BayesClassifier(object):
 if "__main__" == __name__:
 
     # size=numpy.array([2,2,2,4,4,2,4,4,2,3,3,2,3,3]).reshape((7,2))
-    size = numpy.array([2, 2, 2, 4]).reshape((2, 2))
+    size = numpy.array([3, 3, 2, 2]).reshape((2, 2))
     for combination in size:
         start_time = time.time()
         X, y, test_x, test_y = load_data(combination[0], combination[1])
         clf = BayesClassifier(combination[0], combination[1])
         clf.fit(X, y)
         pr = clf.predict(test_x)
+        print("running time")
         print(time.time() - start_time)
         print "Confusion Matrix"
         print confusion_matrix(test_y, pr)

@@ -18,16 +18,24 @@ def load_data(xsize,ysize):
     train_x = train_x.reshape((train_labels.shape[0], 28 * 28))
     new_train_x = numpy.zeros((train_labels.shape[0], (28/xsize) * (28/ysize)))
     cnt = 0
-    for i in xrange(0, 28 * 28, 2):
-        if (i+1) % 28 != 0 and i / 28 % 2 == 0:
+    # for i in xrange(0, 28*28,2):
+    #     if (i+1) % 28 != 0 and i / 28 % 2 == 0:
+    #         num=0
+    #         for row in xrange(xsize):
+    #             for col in xrange(ysize):
+    #                 new_train_x[:, cnt] += pow(2,num)*train_x[:, i+28*row+col]
+    #                 num+=1
+    #         # new_train_x[:, cnt] = train_x[:, i] + train_x[:, i+1]*2 + train_x[:, i+28]*4 + train_x[:, i+29]*8
+    #         cnt += 1
+    for i in xrange(28/xsize):
+        for j in xrange(28/ysize):
             num=0
             for row in xrange(xsize):
                 for col in xrange(ysize):
-                    new_train_x[:, cnt] += pow(2,num)*train_x[:, i+28*row+col]
+                    new_train_x[:, cnt] += pow(2,num)*train_x[:, i*xsize*28+j*ysize+28*row+col]
                     num+=1
-            # new_train_x[:, cnt] = train_x[:, i] + train_x[:, i+1]*2 + train_x[:, i+28]*4 + train_x[:, i+29]*8
+            # new_test_x[:, cnt] = test_x[:, i] + test_x[:, i+1]*2 + test_x[:, i+28]*4 + test_x[:, i+29]*8
             cnt += 1
-
 
     train_x = numpy.array(new_train_x, dtype=int)
 
@@ -47,12 +55,15 @@ def load_data(xsize,ysize):
     test_x = test_x.reshape((test_labels.shape[0], 28 * 28))
     new_test_x = numpy.zeros((test_labels.shape[0], (28/xsize) * (28/ysize)))
     cnt = 0
-    for i in xrange(0, 28 * 28, 2):
-        if (i+1) % 28 != 0 and i / 28 % 2 == 0:
+    # for i in xrange(0, 28 * 28, 4):
+    #     # if (i+1) % 28 != 0 and (i+1) % 28 <25 and i / 28 % 2 == 0:
+    for i in xrange(28/xsize):
+        for j in xrange(28/ysize):
             num=0
             for row in xrange(xsize):
                 for col in xrange(ysize):
-                    new_test_x[:, cnt] += pow(2,num)*test_x[:, i+28*row+col]
+                    # print(cnt)
+                    new_test_x[:, cnt] += pow(2,num)*test_x[:, i*xsize*28+j*ysize+28*row+col]
                     num+=1
             # new_test_x[:, cnt] = test_x[:, i] + test_x[:, i+1]*2 + test_x[:, i+28]*4 + test_x[:, i+29]*8
             cnt += 1
@@ -92,7 +103,7 @@ class BayesClassifier(object):
 
 
 if "__main__" == __name__:
-    size=numpy.array([2,2,2,4]).reshape((2,2))
+    size=numpy.array([4,4]).reshape((1,2))
     for combination in size:
         start_time=time.time()
         X, y, test_x, test_y = load_data(combination[0], combination[1])

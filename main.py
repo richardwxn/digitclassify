@@ -6,7 +6,7 @@ from math import log10
 from PIL import Image
 from sklearn.metrics import confusion_matrix
 import heapq
-def parsetrainingdata():
+def parsetrainingdata(smoothconstant):
     infile = open("/Users/newuser/Downloads/digitdata/trainingimages.txt", 'r')
     inlabel = open(
         "/Users/newuser/Downloads/digitdata/traininglabels.txt", 'r')
@@ -14,7 +14,7 @@ def parsetrainingdata():
     global bayesmatrix
     global numberclass
     bayesmatrix = np.zeros((10, 28, 28))
-    bayesmatrix.fill(1)
+    bayesmatrix.fill(int(smoothconstant))
     numberclass = np.zeros(10)
     i = 0
     j = 0
@@ -34,13 +34,13 @@ def parsetrainingdata():
         for i in xrange(0, 28):
             for j in xrange(0, 28):
                 bayesmatrix[x][i][j] = float(
-                    bayesmatrix[x][i][j]) / float((numberclass[x] + 2 * 1))
+                    bayesmatrix[x][i][j]) / float((numberclass[x] + 2 * smoothconstant))
     # print(bayesmatrix[2])
     totalcount = sum(numberclass)
-    print(numberclass)
+    # print(numberclass)
     for i in xrange(numberclass.size):
         numberclass[i] = float(numberclass[i]) / float(totalcount)
-    print(numberclass)
+    # print(numberclass)
     # print(bayesmatrix[0])
     # print(featuremap)
 
@@ -53,8 +53,14 @@ def classifydigit():
     alllines = testfile.readlines()
     testlabels = testlabel.readlines()
     confusion_matrix = np.zeros((10, 10))
-    i, j = 0, 0
+    # i, j = 0, 0
     truecount = 0
+    hehemap=np.ones((10,1))
+    hehematrix=np.zeros((10,1))
+    minhehemap=np.ones((10,1))
+    matrix=np.zeros((10,1))
+    hehemap*=-1000
+    minhehemap*=1000
     for testcasenumber in xrange(len(testlabels)):
         # print(testcasenumber)
         truelabel = int(testlabels[testcasenumber])
@@ -69,7 +75,8 @@ def classifydigit():
                 j = 0
                 for word in line:
                     if len(word) == 0 or word == ' ':
-                        curpossibility += log10(1 - bayesmatrix[possiblelabel][count][j])
+                        if 1 - bayesmatrix[possiblelabel][count][j] != 0:
+                            curpossibility += log10(abs(1 - bayesmatrix[possiblelabel][count][j]))
                     else:
                         curpossibility += log10(
                             bayesmatrix[possiblelabel][count][j])
@@ -85,13 +92,26 @@ def classifydigit():
         # print(assignedlabel)
         if truelabel == assignedlabel:
             truecount += 1
+            # Find the most prototypical and the most not
+            # if maxpossibility>hehemap[assignedlabel]:
+            #     hehemap[assignedlabel]=maxpossibility
+            #     hehematrix[assignedlabel,:]=testcasenumber
+            # if maxpossibility<minhehemap[assignedlabel]:
+            #     minhehemap[assignedlabel]=maxpossibility
+            #     matrix[assignedlabel,:]=testcasenumber
         confusion_matrix[assignedlabel][truelabel] += 1
     print(float(truecount) / float(len(testlabels)))
-    confusesum = sum(confusion_matrix)
-    confusion_matrix / confusesum
-    print(confusion_matrix)
-
-
+    # confusesum = sum(confusion_matrix)
+    # confusion_matrix / confusesum
+    # print(confusion_matrix)
+    # for i in xrange(10):
+    #     print(i)
+    #     print(confusion_matrix[i,i]/np.sum(confusion_matrix[:,i]))
+    #
+    # print(hehemap)
+    # print(minhehemap)
+    # print(hehematrix)
+    # print(matrix)
 def getimages(c):
     global bayesmatrix
     img = Image.new('RGB', (84, 28), "black")
@@ -100,14 +120,14 @@ def getimages(c):
     xmax = -1000
     for i in xrange(28):
         for j in xrange(28):
-            x = log10(bayesmatrix[c][i][j])
+            x = log10(bayesmatrix[c][j][i])
             if x < xmin:
                 xmin = x
             if x > xmax:
                 xmax = x
     for i in xrange(28):
         for j in xrange(28):
-            x = log10(bayesmatrix[c][i][j])
+            x = log10(bayesmatrix[c][j][i])
             pixels[i, j] =  getColor(x, xmin, xmax)
     return img
 
@@ -125,7 +145,7 @@ def oddsRatioMap(c1, c2):
     xmax = -1000
     for i in xrange(28):
         for j in xrange(28):
-            x = log10(bayesmatrix[c1][i][j] / bayesmatrix[c2][i][j])
+            x = log10(bayesmatrix[c1][j][i] / bayesmatrix[c2][j][i])
             if x < xmin:
                 xmin = x
             if x > xmax:
@@ -133,9 +153,9 @@ def oddsRatioMap(c1, c2):
 
     for i in xrange(28):
         for j in xrange(28):
-            odds_ratio[i][j] = bayesmatrix[c1][
-                        i][j] / bayesmatrix[c2][i][j]
-            x = log10(odds_ratio[i][j])
+            odds_ratio[j][i] = bayesmatrix[c1][
+                        j][i] / bayesmatrix[c2][j][i]
+            x = log10(odds_ratio[j][i])
             pixels[i, j] = getColor(x, xmin, xmax)
             pixels[i + 28, j] = pixel1[i, j]
             pixels[i + 56, j] = pixel2[i, j]
@@ -222,7 +242,7 @@ def builddictionary():
             newword = word.split(':')[0]
             worddict.append(newword)
     worddict = set(worddict)
-    print(len(worddict))
+    # print(len(worddict))
 
 
 def buildconditional():
@@ -236,43 +256,9 @@ def buildconditional():
     initial=infile.tell()
 
     # Multinominal
-    for line in infile.readlines():
-        label = line.strip("\n").split(' ')[0]
-        if int(label) == 1:
-            pclass[0] += 1
-        else:
-            pclass[1] += 1
-        for word in line.strip("\n").split(' ')[1:]:
-            newword, count = word.split(':')
-            if int(label) == 1:
-                if newword in spam:
-                    spam[newword] += int(count)
-
-                else:
-                    spam[newword] = 1.0
-            else:
-                if newword in normal:
-                    normal[newword] += int(count)
-                else:
-                    normal[newword] = 1.0
-    for word in worddict:
-        if word not in spam:
-            spam[word] = 1.0
-        if word not in normal:
-            normal[word] = 1.0
-    spamsize = np.sum(np.asarray(list(spam.itervalues())))
-    normalsize = np.sum(np.asarray(list(normal.itervalues())))
-    spamunique=len(np.unique(np.asarray(list(spam.iterkeys()))))
-    normalunique=len(np.unique(np.asarray(list(normal.iterkeys()))))
-    for word in spam:
-        spam[word] = spam[word] / (spamsize+spamunique)
-    for word in normal:
-        normal[word] = normal[word] / (normalsize+normalunique)
-
-    # Bernouli Naive Bayes
     # for word in worddict:
-    #     spam[word]=1.0
-    #     normal[word]=1.0
+    #     spam[word] = 1.0
+    #     normal[word] = 1.0
     # for line in infile.readlines():
     #     label = line.strip("\n").split(' ')[0]
     #     if int(label) == 1:
@@ -283,16 +269,49 @@ def buildconditional():
     #         newword, count = word.split(':')
     #         if int(label) == 1:
     #             if newword in spam:
-    #                 spam[newword] += 1.0
+    #                 spam[newword] += int(count)
+    #             #
+    #             # else:
+    #             #     spam[newword] = 1.0
     #         else:
     #             if newword in normal:
-    #                 normal[newword] += 1.0
-    # infile.seek(initial)
-    # length=len(infile.readlines())
+    #                 normal[newword] += int(count)
+    #             # else:
+    #             #     normal[newword] = 1.0
+    #
+    # spamsize = np.sum(np.asarray(list(spam.itervalues())))
+    # normalsize = np.sum(np.asarray(list(normal.itervalues())))
+    # # spamunique=len(np.unique(np.asarray(list(spam.iterkeys()))))
+    # # normalunique=len(np.unique(np.asarray(list(normal.iterkeys()))))
     # for word in spam:
-    #     spam[word] = spam[word] / (pclass[0]+2)
+    #     spam[word] = spam[word] / (spamsize+len(worddict))
     # for word in normal:
-    #     normal[word] = normal[word] / (pclass[1]+2)
+    #     normal[word] = normal[word] / (normalsize+len(worddict))
+
+    # Bernouli Naive Bayes
+    for word in worddict:
+        spam[word]=1.0
+        normal[word]=1.0
+    for line in infile.readlines():
+        label = line.strip("\n").split(' ')[0]
+        if int(label) == 1:
+            pclass[0] += 1
+        else:
+            pclass[1] += 1
+        for word in line.strip("\n").split(' ')[1:]:
+            newword, count = word.split(':')
+            if int(label) == 1:
+                if newword in spam:
+                    spam[newword] += 1.0
+            else:
+                if newword in normal:
+                    normal[newword] += 1.0
+    infile.seek(initial)
+    length=len(infile.readlines())
+    for word in spam:
+        spam[word] = spam[word] / (pclass[0]+2)
+    for word in normal:
+        normal[word] = normal[word] / (pclass[1]+2)
     # for key, value in spam.iteritems():
 
     # key top 20 words for each class
@@ -325,10 +344,10 @@ def classifyspam():
 
         # This part need to change for two different datasets
         # This part only for bernouli, you need to include those words not in the document
-        # for word in worddict:
-        #     if word not in appearword:
-        #         spamword+=np.log(1-spam[word])
-        #         normalword+=np.log(1-normal[word])
+        for word in worddict:
+            if word not in appearword:
+                spamword+=np.log(1-spam[word])
+                normalword+=np.log(1-normal[word])
         if spamword >= normalword:
             assignedlabel.append(1)
 
@@ -337,27 +356,28 @@ def classifyspam():
         spamword = np.log(spamfreq)
         normalword = np.log(normalfreq)
     correct = np.sum(np.asarray(assignedlabel) == np.asarray(label))
-    print(confusion_matrix(label, assignedlabel))
+    # print(confusion_matrix(label, assignedlabel))
     print(float(correct) / len(assignedlabel))
 
 
 if __name__ == "__main__":
-    worddict = []
-    numberclass = np.array
+
     spam = {}
     normal = {}
     pclass = [0, 0]
-    builddictionary()
-    buildconditional()
-    classifyspam()
+    # builddictionary()
+    # buildconditional()
+    # classifyspam()
 
 
-
-    # bayesmatrix=[]
-    # parsetrainingdata()
-    # classifydigit()
+    # for const in xrange(1,51,1):
+    worddict = []
+    numberclass = np.array
+    bayesmatrix=[]
+    parsetrainingdata(1)
+    classifydigit()
     # oddsRatioMap(4,9)
     # oddsRatioMap(5,3)
-    # oddsRatioMap(7,9)
+    oddsRatioMap(7,9)
     # oddsRatioMap(8,3)
 
