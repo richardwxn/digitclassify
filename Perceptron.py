@@ -11,58 +11,131 @@ import operator
 class Perceptron(object):
     def __init__(self):
         self.weightmatrix=None
-
+        self.featurematrix=None
     def trainweight(self):
         # Try different intial method here
         # No bias term now
-        weightmatrix=np.zeros(10,28*28)
+        weightmatrix=np.zeros((10,28*28))
         featurematrix=np.zeros(28*28)
 
         # bias term
         # weightmatrix=np.zeros(10,28*28+1)
         # featurematrix=np.zeros(28*28+1)
 
+        #
+        learningrate=0.05
+
         infile = open("/Users/newuser/Downloads/digitdata/trainingimages.txt", 'r')
         inlabel = open(
             "/Users/newuser/Downloads/digitdata/traininglabels.txt", 'r')
         labels = inlabel.readlines()
+        print(labels.__len__())
+
+        intial=infile.tell()
+        for epoach in xrange(50):
+            j = 0
+            count=0
+            i=0
+            infile.seek(intial)
+            for line in infile.readlines():
+                for word in line.strip("\n"):
+                    if word == '+' or word == '#':
+                        featurematrix[j] += 1
+                    j += 1
+                i+=1
+                if i % 28 == 0 and i != 0 and i!=140000:
+                    truelabel=labels[i/28]
+                    count+=1
+                    tempmax=-10000
+                    templabel=0
+                    j=0
+                    for index in xrange(10):
+                        if(np.inner(featurematrix,weightmatrix[index,:])>tempmax):
+                            templabel=index
+                    if(templabel!=truelabel):
+                        weightmatrix[truelabel,:]+=learningrate*featurematrix[:]
+                        weightmatrix[templabel,:]-=learningrate*featurematrix[:]
+                    featurematrix.fill(0)
+
+        return weightmatrix
+    def classify(self,weightmatrix):
+        testfile = open("/Users/newuser/Downloads/digitdata/testimages", 'r')
+        testlabel = open("/Users/newuser/Downloads/digitdata/testlabels", 'r')
+        alllines = testfile.readlines()
+        testlabels = testlabel.read().splitlines()
+        featurematrix=np.zeros(28*28)
+        templabels=[]
         j = 0
         i=0
-        for line in infile.readlines():
+        for line in alllines:
             for word in line.strip("\n"):
                 if word == '+' or word == '#':
                     featurematrix[j] += 1
                 j += 1
             i+=1
-            j = 0
-            tempmax=-10000
-            templabel=0
-            for index in xrange(10):
-                if(np.inner(featurematrix,weightmatrix[index,:])>tempmax):
-                    templabel=index
-
-            if(templabel!=labels[i])  :
-                weightmatrix
-
-
-    def classify(self):
-
+            if i % 28 == 0 and i != 0:
+                tempmax=-10000
+                templabel=0
+                j=0
+                for index in xrange(10):
+                    if(np.inner(featurematrix,weightmatrix[index,:])>tempmax):
+                        templabel=index
+                templabels.append(str(templabel))
+                featurematrix.fill(0)
+        templabels=np.array(templabels)
+        testlabels=np.array(testlabels)
+        accuracy=float(np.sum(templabels==testlabels))/float(testlabels.__len__())
+        print(accuracy)
+        print(confusion_matrix(testlabels,templabels))
 
 class KNN(object):
     def train(self):
+        infile = open("/Users/newuser/Downloads/digitdata/trainingimages.txt", 'r')
+        inlabel = open(
+            "/Users/newuser/Downloads/digitdata/traininglabels.txt", 'r')
+        labels = inlabel.readlines()
+        newfeaturematrix=np.zeros(28*28)
+        trainingset=[]
+        testset=[]
+        j = 0
+        i=0
+        for line in infile.readlines():
+            for word in line.strip("\n"):
+                if word == '+' or word == '#':
+                    newfeaturematrix[j] += 1
+                j += 1
+            i+=1
+            if i % 28 == 0 and i != 0 and i!=140000:
+                j=0
+                trainingset.append(newfeaturematrix)
+                newfeaturematrix.fill(0)
+        j = 0
+        i=0
+        newfeaturematrix=np.zeros(28*28)
+        testfile = open("/Users/newuser/Downloads/digitdata/testimages", 'r')
+        for line in testfile.readlines():
+            for word in line.strip("\n"):
+                if word == '+' or word == '#':
+                    newfeaturematrix[j] += 1
+                j += 1
+            i+=1
+            if i % 28 == 0 and i != 0:
+                j=0
+                testset.append(newfeaturematrix)
+                newfeaturematrix.fill(0)
+        return trainingset,testset
     # different distance measurement
-    def euclideanDistance(instance1, instance2, length):
+    def euclideanDistance(self,instance1, instance2, length):
         distance = 0
         for x in range(length):
             distance += pow((instance1[x] - instance2[x]), 2)
         return math.sqrt(distance)
 
-    def
-    def getNeighbors(trainingSet, testInstance, k):
+    def getNeighbors(self,trainingSet, testInstance, k):
         distances = []
         length = len(testInstance)-1
         for x in range(len(trainingSet)):
-            dist = euclideanDistance(testInstance, trainingSet[x], length)
+            dist = self.euclideanDistance(testInstance, trainingSet[x], length)
             distances.append((trainingSet[x], dist))
         distances.sort(key=operator.itemgetter(1))
         neighbors = []
@@ -70,7 +143,7 @@ class KNN(object):
             neighbors.append(distances[x][0])
         return neighbors
 
-    def getResponse(neighbors):
+    def getResponse(self,neighbors):
         classVotes = {}
         for x in range(len(neighbors)):
             response = neighbors[x][-1]
@@ -78,10 +151,11 @@ class KNN(object):
                 classVotes[response] += 1
             else:
                 classVotes[response] = 1
+        print(classVotes)
         sortedVotes = sorted(classVotes.iteritems(), key=operator.itemgetter(1), reverse=True)
         return sortedVotes[0][0]
 
-    def getAccuracy(testSet, predictions):
+    def getAccuracy(self,testSet, predictions):
         correct = 0
         for x in range(len(testSet)):
             if testSet[x][-1] == predictions[x]:
@@ -89,20 +163,27 @@ class KNN(object):
         return (correct/float(len(testSet))) * 100.0
 
     def main(self):
-        trainingSet=[]
-        testSet=[]
         testfile = open("/Users/newuser/Downloads/digitdata/testimages", 'r')
         testlabel = open("/Users/newuser/Downloads/digitdata/testlabels", 'r')
-        alllines = testfile.readlines()
         testlabels = testlabel.readlines()
         predictions=[]
+        trainingSet,testSet=self.train()
         k = 3
         for x in range(len(testlabels)):
-            neighbors = getNeighbors(trainingSet, testSet[x], k)
-            result = getResponse(neighbors)
+            neighbors = self.getNeighbors(trainingSet, testSet[x], k)
+            print(neighbors.__len__())
+            result = self.getResponse(neighbors)
             predictions.append(result)
             print('> predicted=' + repr(result) + ', actual=' + repr(testSet[x][-1]))
-        accuracy = getAccuracy(testSet, predictions)
+        accuracy = self.getAccuracy(testSet, predictions)
         print('Accuracy: ' + repr(accuracy) + '%')
 
 
+if "__main__" == __name__:
+    # classifier=Perceptron()
+    # # weight=np.array(classifier.trainweight())
+    # weight=classifier.trainweight()
+    # classifier.classify(weight)
+
+    Knn=KNN()
+    Knn.main()
