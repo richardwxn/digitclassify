@@ -44,14 +44,16 @@ class Perceptron(object):
                     j += 1
                 i+=1
                 if i % 28 == 0 and i != 0 and i!=140000:
-                    truelabel=labels[i/28]
+                    truelabel=labels[i/28-1]
                     count+=1
                     tempmax=-10000
                     templabel=0
                     j=0
                     for index in xrange(10):
-                        if(np.inner(featurematrix,weightmatrix[index,:])>tempmax):
+                        tempres=np.inner(featurematrix,weightmatrix[index,:])
+                        if(tempres>tempmax):
                             templabel=index
+                            tempmax=tempres
                     if(templabel!=truelabel):
                         weightmatrix[truelabel,:]+=learningrate*featurematrix[:]
                         weightmatrix[templabel,:]-=learningrate*featurematrix[:]
@@ -78,8 +80,10 @@ class Perceptron(object):
                 templabel=0
                 j=0
                 for index in xrange(10):
-                    if(np.inner(featurematrix,weightmatrix[index,:])>tempmax):
+                    tempres=np.inner(featurematrix,weightmatrix[index,:])
+                    if(tempres>tempmax):
                         templabel=index
+                        tempmax=tempres
                 templabels.append(str(templabel))
                 featurematrix.fill(0)
         templabels=np.array(templabels)
@@ -178,12 +182,90 @@ class KNN(object):
         accuracy = self.getAccuracy(testSet, predictions)
         print('Accuracy: ' + repr(accuracy) + '%')
 
+class Perceptronfornews(object):
+    def __init__(self):
+        self.weightmatrix=None
+        self.featurematrix=None
+    def trainweight(self):
+        infile = open(
+        "/Users/newuser/Downloads/8category/8category.training.txt", 'r')
+        worddict=[]
+        for line in infile.readlines():
+            for word in line.strip("\n").split(' ')[1:]:
+                newword = word.split(':')[0]
+                worddict.append(newword)
+        worddict = np.unique(np.asarray(worddict))
+        print(len(worddict))
+        weightmatrix=np.ones((8,len(worddict)))
+        # Try different intial method here
+        # No bias term now
 
+        featurematrix=np.zeros(len(worddict))
+
+        # bias term
+        # weightmatrix=np.zeros(10,28*28+1)
+        # featurematrix=np.zeros(28*28+1)
+
+        #
+        learningrate=0.05
+
+        for line in infile.readlines():
+            label = line.strip("\n").split(' ')[0]
+            for word in line.strip("\n").split(' ')[1:]:
+                newword, count = word.split(':')
+                featurematrix[np.where(worddict==newword)]+=int(count)
+            tempmax=-10000
+            templabel=0
+            j=0
+            for index in xrange(8):
+                tempres=np.inner(featurematrix,weightmatrix[index,:])
+                if(tempres>tempmax):
+                            templabel=index
+                            tempmax=tempres
+            if(templabel!=label):
+                    weightmatrix[label,:]+=learningrate*featurematrix[:]
+                    weightmatrix[templabel,:]-=learningrate*featurematrix[:]
+                    featurematrix.fill(0)
+
+        return weightmatrix,worddict
+    def classify(self,weightmatrix,worddict):
+        testfile = open(
+        "/Users/newuser/Downloads/8category/8category.testing.txt", 'r')
+        alllines = testfile.readlines()
+        featurematrix=np.zeros(len(worddict))
+        templabels=[]
+        groundlabel=[]
+        for line in alllines:
+            truelabel=int(line.strip("\n").split(' ')[0])
+            groundlabel.append(truelabel)
+            for word in line.strip("\n").split(' ')[1:]:
+                    newword, count = word.split(':')
+                    if newword not in worddict:
+                        continue
+                    featurematrix[np.where(worddict==newword)]+=int(count)
+            tempmax=-10000
+            templabel=0
+            for index in xrange(8):
+                tempres=np.inner(featurematrix,weightmatrix[index,:])
+                if(tempres>tempmax):
+                        templabel=index
+                        tempmax=tempres
+                templabels.append(templabel)
+                featurematrix.fill(0)
+        templabels=np.array(templabels)
+        testlabels=np.array(groundlabel)
+        accuracy=float(np.sum(templabels==testlabels))/float(testlabels.__len__())
+        print(accuracy)
+        print(confusion_matrix(testlabels,templabels))
 if "__main__" == __name__:
-    # classifier=Perceptron()
-    # # weight=np.array(classifier.trainweight())
-    # weight=classifier.trainweight()
-    # classifier.classify(weight)
+    classifier=Perceptron()
+    weight=classifier.trainweight()
+    classifier.classify(weight)
 
-    Knn=KNN()
-    Knn.main()
+
+    classifier2=Perceptronfornews()
+    weight2,wordict=classifier2.trainweight()
+    classifier2.classify(weight2,wordict)
+
+    # Knn=KNN()
+    # Knn.main()

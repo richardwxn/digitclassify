@@ -6,10 +6,8 @@ import heapq
 from sklearn.metrics import confusion_matrix
 def builddictionary():
     infile = open(
-        "/Users/newuser/Downloads/spam_detection/train_email.txt", 'r')
-    infile = open(
-        "/Users/newuser/Downloads/sentiment/rt-train.txt", 'r')
-    global bayesmatrix
+        "/Users/newuser/Downloads/8category/8category.training.txt", 'r')
+    global weightmatrix
     global worddict
     for line in infile.readlines():
         for word in line.strip("\n").split(' ')[1:]:
@@ -17,14 +15,15 @@ def builddictionary():
             worddict.append(newword)
     worddict = np.unique(np.asarray(worddict))
     print(len(worddict))
-    bayesmatrix=np.ones((8,len(worddict)))
+    weightmatrix=np.ones((8,len(worddict)))
 
 def buildconditional():
     global worddict
     global spam
     global normal
     global pclass
-    global bayesmatrix
+    global weightmatrix
+    global featurematrix
     infile = open(
         "/Users/newuser/Downloads/8category/8category.training.txt", 'r')
 
@@ -38,7 +37,7 @@ def buildconditional():
 
         for word in line.strip("\n").split(' ')[1:]:
             newword, count = word.split(':')
-            bayesmatrix[int(label),np.where(worddict==newword)]+=int(count)
+            featurematrix[int(label),np.where(worddict==newword)]+=int(count)
             uniquesize[int(label),0]+=1
     for i in xrange(bayesmatrix.shape[0]):
         rowsum=sum(bayesmatrix[i, :])
